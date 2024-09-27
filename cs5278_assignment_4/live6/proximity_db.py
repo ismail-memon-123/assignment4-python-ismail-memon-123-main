@@ -112,7 +112,7 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
 
 
     def delete(self, pos: Position) -> Collection[DataAndPosition[T]]:
-        returnList: list[DataAndPosition[T]]
+        returnList: list[DataAndPosition[T]] = {}
         lat = pos.with_coordinates().get_latitude()
         long = pos.with_coordinates().get_longitude()
 
@@ -162,7 +162,7 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
         """
         lat = pos.with_coordinates().get_latitude()
         long = pos.with_coordinates().get_longitude()
-        return geo.contains(lat, long, bits_of_precision)
+        return self.geo.contains(lat, long, bits_of_precision)
 
 
     def nearby(self, pos: Position, bits_of_precision: int) -> Collection[DataAndPosition[T]]:
@@ -176,7 +176,7 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
         lat = pos.with_coordinates().get_latitude()
         long = pos.with_coordinates().get_longitude()
         coordinate_list = self.geo.nearby(lat, long, bits_of_precision)
-        returnList: list[DataAndPosition[T]]
+        returnList: list[DataAndPosition[T]] = {}
         for i in range(len(coordinate_list)):
             # Even though we delete here the delete there is ok bec it will just not be able to find it which is fine
             # if not just make flag

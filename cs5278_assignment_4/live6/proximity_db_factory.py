@@ -1,6 +1,6 @@
 from typing import TypeVar, Generic
 
-from cs5278_assignment_4.live6.proximity_db import ProximityDB
+from cs5278_assignment_4.live6.proximity_db import ProximityDB, ProximityDBImplementation
 
 T = TypeVar("T")
 
@@ -14,4 +14,4 @@ class ProximityDBFactory(Generic[T]):
         Fill this in to create one of your implementations
         """
 
-        return ProximityDBImplementation(T, bits)
+        return ProximityDBImplementation(bits)
