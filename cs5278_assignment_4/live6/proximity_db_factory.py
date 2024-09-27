@@ -14,4 +14,4 @@ class ProximityDBFactory(Generic[T]):
         Fill this in to create one of your implementations
         """
 
-        raise NotImplementedError
+        return ProximityDBImplementation(T, bits)
