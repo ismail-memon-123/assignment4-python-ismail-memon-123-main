@@ -6,7 +6,6 @@ from multimethod import multimethod
 
 from cs5278_assignment_4.live6.data_and_position import DataAndPosition
 from cs5278_assignment_4.live6.position import Position
-from cs5278_assignment_4.live6.geo_db import Position
 from cs5278_assignment_4.live6.geo_db_factory import GeoDBFactory
 
 T = TypeVar("T")
@@ -97,7 +96,7 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
     positionedMap: list[DataAndPosition[T]]
 
     def __init__(self, bits: int):
-        self.positionedMap = {}
+        self.positionedMap = []
         self.geo = GeoDBFactory.new_database(bits)
 
 
@@ -108,19 +107,20 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
         BUT geo does not care bec it is not used for that only for the nearby stuff.
         """
         self.positionedMap.append(data)
-        self.geo.insert(data.with_coordinates.get_latitude, data.with_coordinates.get_longitude)
+        self.geo.insert(data.get_latitude(), data.get_longitude())
 
-
+    @multimethod
     def delete(self, pos: Position) -> Collection[DataAndPosition[T]]:
-        returnList: list[DataAndPosition[T]] = {}
-        lat = pos.with_coordinates().get_latitude()
-        long = pos.with_coordinates().get_longitude()
+        returnList: list[DataAndPosition[T]] = []
+        lat = pos.get_latitude()
+        long = pos.get_longitude()
 
         for i in range(len(self.positionedMap)):
             dp = self.positionedMap[i]
-            if ((dp.with_coordinates().get_latitude() == lat) and (dp.with_coordinates().get_longitude() == long)):
-                self.positionedMap.remove(dp)
+            if ((dp.get_latitude() == lat) and (dp.get_longitude() == long)):
                 returnList.append(dp)
+        for i in range(len(returnList)):
+            self.positionedMap.remove(returnList[i])
         self.geo.delete(lat, long)
         return returnList
 
@@ -131,7 +131,7 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
         Returns the list of data items that were deleted.
         """
 
-
+    @multimethod
     def delete(self, pos: Position, bits_of_precision: int) -> Collection[DataAndPosition[T]]:
         """
         Deletes all data items from the database that
@@ -143,14 +143,23 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
 
         Idea is we get each lat, long pair form the geo hash which is what it returns and feed it to the delete above
         """
-        
-        lat = pos.with_coordinates().get_latitude()
-        long = pos.with_coordinates().get_longitude()
+        returnList: list[DataAndPosition[T]] = []
+        lat = pos.get_latitude()
+        long = pos.get_longitude()
         coordinate_list = self.geo.delete_all(lat, long, bits_of_precision)
         for i in range(len(coordinate_list)):
             # Even though we delete here the delete there is ok bec it will just not be able to find it which is fine
             # if not just make flag
-            self.delete(Position.with_coordinates(coordinate_list[i][0], coordinate_list[i][1]))
+            #self.delete(Position.with_coordinates(coordinate_list[i][0], coordinate_list[i][1]))
+            lat = coordinate_list[i][0]
+            long = coordinate_list[i][1]
+            for j in range(len(self.positionedMap)):
+                dp = self.positionedMap[j]
+                if ((dp.get_latitude() == lat) and (dp.get_longitude() == long)):
+                    returnList.append(dp)
+        for i in range(len(returnList)):
+            self.positionedMap.remove(returnList[i])
+        return returnList
 
 
     def contains(self, pos: Position, bits_of_precision: int) -> bool:
@@ -160,8 +169,8 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
         up to the specified number of bits of precision
         in its geohash.
         """
-        lat = pos.with_coordinates().get_latitude()
-        long = pos.with_coordinates().get_longitude()
+        lat = pos.get_latitude()
+        long = pos.get_longitude()
         return self.geo.contains(lat, long, bits_of_precision)
 
 
@@ -173,16 +182,18 @@ class ProximityDBImplementation(ProximityDB, Generic[T]):
         in their geohashes.
         """
 
-        lat = pos.with_coordinates().get_latitude()
-        long = pos.with_coordinates().get_longitude()
+        lat = pos.get_latitude()
+        long = pos.get_longitude()
         coordinate_list = self.geo.nearby(lat, long, bits_of_precision)
-        returnList: list[DataAndPosition[T]] = {}
+        returnList: list[DataAndPosition[T]] = []
         for i in range(len(coordinate_list)):
+            print("Expcetd: " + str(coordinate_list[i][0]) + "," + str(coordinate_list[i][1]))
             # Even though we delete here the delete there is ok bec it will just not be able to find it which is fine
             # if not just make flag
             #self.delete(Position.with_coordinates(coordinate_list[i][0], coordinate_list[i][1]))
             for j in range(len(self.positionedMap)):
-                dp = self.positionedMap[i]
-                if ((dp.with_coordinates().get_latitude() == coordinate_list[i][0]) and (dp.with_coordinates().get_longitude() == coordinate_list[i][1])):
+                dp = self.positionedMap[j]
+                print("" + str(dp.get_latitude()) + "," + str(dp.get_longitude()))
+                if ((abs(dp.get_latitude() - coordinate_list[i][0]) < 0.5) and (abs(dp.get_longitude() - coordinate_list[i][1]) < 0.5)):
                     returnList.append(dp)
         return returnList
